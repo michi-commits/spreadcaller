@@ -1128,7 +1128,7 @@
         }
 
         // Dashboard
-        function Dashboard({ contacts, calls }) {
+        function Dashboard({ contacts, calls, onViewChange }) {
             const [stats, setStats] = useState({ callsToday: 0, successRate: 0, contactsReady: 0, totalContacts: 0 });
             const [chartData, setChartData] = useState([]);
             const [upcomingTasks, setUpcomingTasks] = useState([]);
@@ -1224,13 +1224,13 @@
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
+                        <button onClick={() => onViewChange('callmode')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
                             📞 Anrufsession starten
                         </button>
-                        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
+                        <button onClick={() => onViewChange('contacts')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
                             📥 Kontakte importieren
                         </button>
-                        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
+                        <button onClick={() => onViewChange('contacts')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded font-semibold transition">
                             ➕ Kontakt hinzufügen
                         </button>
                     </div>
@@ -1737,7 +1737,7 @@
                                     <div className="spin inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
                                 </div>
                             ) : activeView === 'dashboard' ? (
-                                <Dashboard contacts={contacts} calls={calls} />
+                                <Dashboard contacts={contacts} calls={calls} onViewChange={setActiveView} />
                             ) : activeView === 'contacts' ? (
                                 <ContactsList onContactSelected={() => {}} onRefresh={loadData} />
                             ) : activeView === 'callmode' ? (
