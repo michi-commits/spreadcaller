@@ -207,29 +207,32 @@
                         setCSVData({ headers, rows });
                         setPreviewRows(rows.slice(0, 5));
 
-                        // Auto-detect field mapping
+                        // Auto-detect field mapping (exact match first, then partial)
                         const mapping = {};
-                        const lsn = ['First Name', 'first name', 'firstname', 'vorname'];
-                        const lsln = ['Last Name', 'last name', 'lastname', 'nachname'];
-                        const lsco = ['Company', 'company', 'unternehmen'];
-                        const lstit = ['Title', 'title', 'titel', 'job title'];
-                        const lswe = ['Company Website', 'company website', 'website', 'webseite'];
-                        const lsli = ['LinkedIn URL', 'linkedin url', 'linkedin', 'linkedin profile url'];
-                        const lsin = ['Industry', 'industry', 'industrie'];
-                        const lscs = ['Company Size', 'company size', 'firmengröße', 'size'];
-                        const lslo = ['Location', 'location', 'ort'];
+                        const fieldRules = [
+                            { db: 'first_name', exact: ['first name', 'firstname', 'vorname'] },
+                            { db: 'last_name', exact: ['last name', 'lastname', 'nachname'] },
+                            { db: 'email', exact: ['email', 'e-mail', 'email address'] },
+                            { db: 'company_name', exact: ['company name', 'company', 'unternehmen', 'firma'] },
+                            { db: 'job_title', exact: ['current job', 'job title', 'title', 'titel', 'position'] },
+                            { db: 'website', exact: ['company website url', 'company website', 'website', 'webseite'] },
+                            { db: 'linkedin_url', exact: ['linkedin url', 'public linkedin url', 'linkedin'] },
+                            { db: 'industry', exact: ['company industry', 'industry', 'branche', 'industrie'] },
+                            { db: 'company_size', exact: ['company employee range', 'company size', 'firmengröße', 'company employee exact count'] },
+                            { db: 'location', exact: ['location', 'ort', 'company location'] }
+                        ];
 
-                        headers.forEach(h => {
-                            const hl = h.toLowerCase();
-                            if (lsn.some(x => hl.includes(x.toLowerCase()))) mapping['first_name'] = h;
-                            if (lsln.some(x => hl.includes(x.toLowerCase()))) mapping['last_name'] = h;
-                            if (lsco.some(x => hl.includes(x.toLowerCase()))) mapping['company_name'] = h;
-                            if (lstit.some(x => hl.includes(x.toLowerCase()))) mapping['job_title'] = h;
-                            if (lswe.some(x => hl.includes(x.toLowerCase()))) mapping['website'] = h;
-                            if (lsli.some(x => hl.includes(x.toLowerCase()))) mapping['linkedin_url'] = h;
-                            if (lsin.some(x => hl.includes(x.toLowerCase()))) mapping['industry'] = h;
-                            if (lscs.some(x => hl.includes(x.toLowerCase()))) mapping['company_size'] = h;
-                            if (lslo.some(x => hl.includes(x.toLowerCase()))) mapping['location'] = h;
+                        fieldRules.forEach(rule => {
+                            // Try exact match first
+                            for (const term of rule.exact) {
+                                const match = headers.find(h => h.toLowerCase().trim() === term);
+                                if (match) { mapping[rule.db] = match; return; }
+                            }
+                            // Fallback: first partial match
+                            for (const term of rule.exact) {
+                                const match = headers.find(h => h.toLowerCase().trim().includes(term));
+                                if (match && !Object.values(mapping).includes(match)) { mapping[rule.db] = match; return; }
+                            }
                         });
 
                         setFieldMapping(mapping);
@@ -418,7 +421,7 @@
 
             return (
                 <div className="modal-backdrop fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+                    <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-white">CSV importieren</h2>
                             <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
@@ -447,6 +450,7 @@
                                         {[
                                             { db: 'first_name', label: 'Vorname' },
                                             { db: 'last_name', label: 'Nachname' },
+                                            { db: 'email', label: 'E-Mail' },
                                             { db: 'company_name', label: 'Unternehmen' },
                                             { db: 'job_title', label: 'Titel' },
                                             { db: 'website', label: 'Website' },
@@ -472,23 +476,23 @@
                                     </div>
                                 </div>
 
-                                {previewRows.length > 0 && (
+                                {previewRows.length > 0 && Object.keys(fieldMapping).length > 0 && (
                                     <div>
                                         <h3 className="text-white font-semibold mb-2">Vorschau (erste 5 Zeilen)</h3>
                                         <div className="bg-slate-700 rounded overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="border-b border-slate-600">
-                                                        {csvData.headers.slice(0, 4).map(h => (
-                                                            <th key={h} className="px-3 py-2 text-left text-slate-300 font-semibold">{h}</th>
+                                                        {Object.entries(fieldMapping).filter(([,v]) => v).slice(0, 5).map(([db, csvCol]) => (
+                                                            <th key={db} className="px-3 py-2 text-left text-slate-300 font-semibold whitespace-nowrap">{csvCol}</th>
                                                         ))}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {previewRows.map((row, idx) => (
                                                         <tr key={idx} className="border-b border-slate-600">
-                                                            {csvData.headers.slice(0, 4).map(h => (
-                                                                <td key={h} className="px-3 py-2 text-slate-300 truncate">{row[h]}</td>
+                                                            {Object.entries(fieldMapping).filter(([,v]) => v).slice(0, 5).map(([db, csvCol]) => (
+                                                                <td key={db} className="px-3 py-2 text-slate-300 truncate max-w-[200px]">{row[csvCol]}</td>
                                                             ))}
                                                         </tr>
                                                     ))}
